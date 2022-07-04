@@ -16,7 +16,7 @@ module.exports = {
           {
             resourceQuery: /modules/,
             loader: 'css-loader',
-            options: { modules: true },
+            options: { modules: { localIdentName: '[local]___[contenthash:base64:5]' } },
           },
           { loader: 'css-loader' },
         ],
