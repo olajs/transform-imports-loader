@@ -1,6 +1,6 @@
 {
   "name": "@olajs/transform-imports-loader",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "A webpack plugin for transform imports just like babel-plugin-transform-imports does but without babel",
   "main": "lib/index.js",
   "types": "lib/index.d.ts",

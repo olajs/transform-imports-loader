@@ -4,6 +4,10 @@ A webpack plugin for transform imports just like `babel-plugin-transform-imports
 
 So, you can use it with `esbuild` or `babel`.
 
+## install
+
+`npm i @olajs/transform-imports-loader`
+
 ## usage
 
 webpack.config.js
@@ -17,11 +21,11 @@ module.exports = {
         test: /\.(jsx?|tsx?)$/,
         use: [
           {
-            loader: 'transform-imports-loader',
+            loader: '@olajs/transform-imports-loader',
             options: {
               autoCSSModules: false,
               transformImports: {
-                antd: {
+                antd$: {
                   transform: (importName) => `antd/es/${importName}`,
                   preventFullImport: true,
                 },
