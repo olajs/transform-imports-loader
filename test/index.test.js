@@ -62,11 +62,11 @@ async function run() {
       autoCSSModules: true,
       transformImports: {
         './antd': {
-          transform: (importName, matches) => `./antd/lib/${importName}`,
+          transform: './antd/lib/${member}',
           preventFullImport: false,
         },
         'ola-(ui|toolkit)': {
-          transform: (importName, matches) => `ola-${matches[0]}/lib/${importName}`,
+          transform: (importName, matches) => `ola-${matches[1]}/lib/${importName}`,
           preventFullImport: true,
         },
       },

@@ -73,10 +73,10 @@ async function transformImportsLoader(this: webpack.LoaderContext<LoaderOptions>
             fullImportName = '';
           }
 
-          // get binding names, e.g.
+          // get member names, e.g.
           //   name, { a, b } -> [a, b]
           //   { a, b as c } -> [a, b as c]
-          const bindings = imported
+          const members = imported
             .substring(imported.indexOf('{') + 1, imported.indexOf('}') - 1)
             .split(',')
             .map((item) => item.trim())
@@ -86,36 +86,36 @@ async function transformImportsLoader(this: webpack.LoaderContext<LoaderOptions>
           //   import * as name from 'module';
           //   import name from 'module';
           //   import name, { a, b } from 'module';
-          if (preventFullImport && (bindings.length === 0 || fullImportName)) {
+          if (preventFullImport && (members.length === 0 || fullImportName)) {
             throw new Error(
               `[transform-imports-loader] import of entire module ${moduleName} not allowed due to preventFullImport setting`,
             );
           }
 
-          if (!fullImportName && bindings.length > 0) {
-            const results: string[] = [];
-            if (fullImportName) {
-              results.push(`import ${fullImportName} from "${item.n}";`);
-            }
-            bindings.forEach((item) => {
-              let origin = item;
-              let alias = item;
-              if (item.indexOf(' as ') > 0) {
-                const pair = item.split(/\s+as\s+/);
-                origin = pair[0];
-                alias = pair[1];
-              }
-              const newFrom =
-                typeof transform === 'string' ? transform : transform(origin, matches);
-              results.push(`import ${alias} from "${newFrom}";`);
-            });
+          // No need to transform if has full import or binding members is empty
+          if (fullImportName || members.length === 0) return;
 
-            ms.overwrite(
-              item.ss,
-              source.charAt(item.se) === ';' ? item.se + 1 : item.se,
-              results.join('\n'),
-            );
-          }
+          const results: string[] = [];
+          members.forEach((item) => {
+            let origin = item;
+            let alias = item;
+            if (item.indexOf(' as ') > 0) {
+              const pair = item.split(/\s+as\s+/);
+              origin = pair[0];
+              alias = pair[1];
+            }
+            const newFrom =
+              typeof transform === 'string'
+                ? transform.replace(new RegExp('\\$\\{member\\}', 'g'), origin)
+                : transform(origin, matches);
+            results.push(`import ${alias} from "${newFrom}";`);
+          });
+
+          ms.overwrite(
+            item.ss,
+            source.charAt(item.se) === ';' ? item.se + 1 : item.se,
+            results.join('\n'),
+          );
         });
       }
     });
