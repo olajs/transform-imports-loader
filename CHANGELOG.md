@@ -1,5 +1,9 @@
 # changelog
 
+## v0.0.4
+
+- fix: add `sourceMap`
+
 ## v0.0.3
 
 - feat: `transform` support `${member}`

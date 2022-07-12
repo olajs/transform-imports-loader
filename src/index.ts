@@ -12,7 +12,11 @@ type LoaderOptions = {
   };
 };
 
-async function transformImportsLoader(this: webpack.LoaderContext<LoaderOptions>, source: string) {
+async function transformImportsLoader(
+  this: webpack.LoaderContext<LoaderOptions>,
+  source: string,
+  map: string,
+) {
   const done = this.async();
   const { autoCSSModules, transformImports } = this.getOptions();
   await init;
@@ -120,7 +124,7 @@ async function transformImportsLoader(this: webpack.LoaderContext<LoaderOptions>
       }
     });
 
-    done(null, ms.toString());
+    done(null, ms.toString(), map);
   } catch (e: any) {
     done(e);
   }
