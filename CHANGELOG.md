@@ -1,5 +1,9 @@
 # changelog
 
+## v0.0.5
+
+- feat: add .sass and .styl to auto cssModules
+
 ## v0.0.4
 
 - fix: add `sourceMap`

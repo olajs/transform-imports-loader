@@ -30,7 +30,7 @@ async function transformImportsLoader(
       const moduleName = item.n;
 
       // deal with css files
-      if (/\.(css|less|scss)$/.test(moduleName)) {
+      if (/\.(css|less|scss|sass|styl)$/.test(moduleName)) {
         // auto add css modules query string, e.g.
         // transform
         //   import styles from 'a.less';
