@@ -33,6 +33,7 @@ async function transformImportsLoader(
     const ms = new MagicString(source);
     const updatedLines: UpdatedLine[] = [];
 
+    let contentUpdated = false;
     imports.forEach((item) => {
       if (!item.n) return;
 
@@ -46,9 +47,10 @@ async function transformImportsLoader(
         // into
         //   import styles from 'a.less?modules';
         // then, you can use "resourceQuery: /modules/" to set css-loader's modules to true
-        autoCSSModules &&
-          source.substring(item.ss, item.se).indexOf(' from ') > 0 &&
+        if (autoCSSModules && source.substring(item.ss, item.se).indexOf(' from ') > 0) {
           ms.update(item.s, item.e, moduleName + '?modules');
+          contentUpdated = true;
+        }
       }
       // deal with other files
       else if (transformImports) {
@@ -142,14 +144,17 @@ async function transformImportsLoader(
           }
 
           ms.update(item.ss, rewrittenEnd, resultsString);
+          contentUpdated = true;
         });
       }
     });
 
-    // regenerate sourcemap when source content has been updated
-    if (this.sourceMap && map && updatedLines.length > 0) {
-      map = await reGenerateSourceMap(map, updatedLines);
+    if (contentUpdated) {
       source = ms.toString();
+      // regenerate sourcemap when source content has been updated
+      if (this.sourceMap && map && updatedLines.length > 0) {
+        map = await reGenerateSourceMap(map, updatedLines);
+      }
     }
 
     done(null, source, map);
