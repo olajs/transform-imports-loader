@@ -1,6 +1,6 @@
 {
   "name": "@olajs/transform-imports-loader",
-  "version": "0.0.6-alpha.0",
+  "version": "0.0.6-alpha.1",
   "description": "A webpack plugin for transform imports just like babel-plugin-transform-imports does but without babel",
   "main": "lib/index.js",
   "types": "lib/index.d.ts",
@@ -27,8 +27,8 @@
   "author": "richardchen85",
   "license": "MIT",
   "dependencies": {
-    "es-module-lexer": "0.10.5",
-    "magic-string": "0.26.2",
+    "es-module-lexer": "1.4.1",
+    "magic-string": "0.30.5",
     "source-map": "^0.7.4"
   },
   "devDependencies": {

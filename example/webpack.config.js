@@ -26,7 +26,7 @@ module.exports = {
         test: /\.tsx?$/,
         use: [
           {
-            loader: '@olajs/transform-imports-loader',
+            loader: require.resolve('../lib/index.js'),
             options: {
               autoCSSModules: true,
               transformImports: {

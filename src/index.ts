@@ -13,7 +13,7 @@ type LoaderOptions = {
   };
 };
 
-type RewrittenLine = {
+type UpdatedLine = {
   sourceStartLine: number;
   sourceEndLine: number;
   addCount: number;
@@ -31,7 +31,7 @@ async function transformImportsLoader(
   try {
     const [imports] = parse(source);
     const ms = new MagicString(source);
-    const rewrittenLines: RewrittenLine[] = [];
+    const updatedLines: UpdatedLine[] = [];
 
     imports.forEach((item) => {
       if (!item.n) return;
@@ -48,7 +48,7 @@ async function transformImportsLoader(
         // then, you can use "resourceQuery: /modules/" to set css-loader's modules to true
         autoCSSModules &&
           source.substring(item.ss, item.se).indexOf(' from ') > 0 &&
-          ms.overwrite(item.s, item.e, moduleName + '?modules');
+          ms.update(item.s, item.e, moduleName + '?modules');
       }
       // deal with other files
       else if (transformImports) {
@@ -134,33 +134,34 @@ async function transformImportsLoader(
             const sourceEndLine =
               sourceStartLine + source.slice(item.ss, rewrittenEnd).split('\n').length - 1;
 
-            rewrittenLines.push({
+            updatedLines.push({
               sourceStartLine,
               sourceEndLine,
               addCount: results.length - (sourceEndLine - sourceStartLine + 1),
             });
           }
 
-          ms.overwrite(item.ss, rewrittenEnd, resultsString);
+          ms.update(item.ss, rewrittenEnd, resultsString);
         });
       }
     });
 
-    // regenerate sourcemap when source content has been rewritten
-    if (this.sourceMap && map && rewrittenLines.length > 0) {
-      map = await reGenerateSourceMap(map, rewrittenLines);
+    // regenerate sourcemap when source content has been updated
+    if (this.sourceMap && map && updatedLines.length > 0) {
+      map = await reGenerateSourceMap(map, updatedLines);
+      source = ms.toString();
     }
 
-    done(null, ms.toString(), map);
+    done(null, source, map);
   } catch (e: any) {
     done(e);
   }
 }
 
 /**
- * regenerate sourcemap by rewritten lines
+ * regenerate sourcemap by updated lines
  */
-async function reGenerateSourceMap(originMap: RawSourceMap, rewrittenLines: RewrittenLine[]) {
+async function reGenerateSourceMap(originMap: RawSourceMap, updatedLines: UpdatedLine[]) {
   const newMap = await SourceMapConsumer.with(originMap, undefined, (consumer) => {
     const generator = new SourceMapGenerator();
     generator.setSourceContent(
@@ -178,7 +179,7 @@ async function reGenerateSourceMap(originMap: RawSourceMap, rewrittenLines: Rewr
         let replaced = false;
         let addCount = 0;
         // update generated line number
-        rewrittenLines.forEach((item) => {
+        updatedLines.forEach((item) => {
           if (
             newMapping.generated.line >= item.sourceStartLine &&
             newMapping.generated.line <= item.sourceEndLine
@@ -188,7 +189,7 @@ async function reGenerateSourceMap(originMap: RawSourceMap, rewrittenLines: Rewr
             addCount += item.addCount;
           }
         });
-        // do not generate sourcemap of rewritten content
+        // do not generate sourcemap of updated content
         if (!replaced) {
           newMapping.generated.line += addCount;
           generator.addMapping(newMapping);
