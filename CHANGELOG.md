@@ -1,5 +1,9 @@
 # changelog
 
+## v0.0.6
+
+- feat: regenerate sourcemap when content is updated
+
 ## v0.0.5
 
 - feat: add .sass and .styl to auto cssModules

@@ -126,15 +126,15 @@ async function transformImportsLoader(
             results.push(`import ${alias} from "${newFrom}";`);
           });
           const resultsString = results.join('\n');
-          // end position of rewritten content
-          const rewrittenEnd = source.charAt(item.se) === ';' ? item.se + 1 : item.se;
+          // end position of updated content
+          const updatedEnd = source.charAt(item.se) === ';' ? item.se + 1 : item.se;
 
           if (this.sourceMap) {
-            // start line number of rewritten content
+            // start line number of updated content
             const sourceStartLine = source.slice(0, item.ss).split('\n').length;
-            // end line number of rewritten content
+            // end line number of updated content
             const sourceEndLine =
-              sourceStartLine + source.slice(item.ss, rewrittenEnd).split('\n').length - 1;
+              sourceStartLine + source.slice(item.ss, updatedEnd).split('\n').length - 1;
 
             updatedLines.push({
               sourceStartLine,
@@ -143,7 +143,7 @@ async function transformImportsLoader(
             });
           }
 
-          ms.update(item.ss, rewrittenEnd, resultsString);
+          ms.update(item.ss, updatedEnd, resultsString);
           contentUpdated = true;
         });
       }
