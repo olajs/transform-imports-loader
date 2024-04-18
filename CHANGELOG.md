@@ -1,5 +1,9 @@
 # changelog
 
+## v0.0.7
+
+- chore: split transformer to a standalone file
+
 ## v0.0.6
 
 - feat: regenerate sourcemap when content is updated
