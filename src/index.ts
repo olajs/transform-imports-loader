@@ -1,17 +1,7 @@
 import type * as webpack from 'webpack';
 import { RawSourceMap } from 'source-map';
-import transformer, { Params } from './transformer';
-
-type LoaderOptions = {
-  /**
-   * 是否开启自动识别 cssModules
-   */
-  autoCSSModules?: boolean;
-  /**
-   * transformImports 的转换规则配置
-   */
-  transformImports?: Params['transformImports'];
-};
+import transformer from './transformerAsync';
+import { LoaderOptions } from './types';
 
 async function transformImportsLoader(
   this: webpack.LoaderContext<LoaderOptions>,

@@ -1,5 +1,9 @@
 # changelog
 
+## v0.0.8
+
+- feat: use rs-module-lexer
+
 ## v0.0.7
 
 - chore: split transformer to a standalone file

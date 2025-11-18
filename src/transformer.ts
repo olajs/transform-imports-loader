@@ -1,48 +1,17 @@
-import { RawSourceMap, SourceMapConsumer, SourceMapGenerator } from 'source-map';
 import MagicString from 'magic-string';
-import { init, parse } from 'es-module-lexer';
+import { ImportSpecifier, parse } from 'rs-module-lexer';
+import { TransformerParams, UpdatedLine } from './types';
 
-export type Params = {
-  /**
-   * 代码文件内容
-   */
-  source: string;
-  /**
-   * transformImports 的转换规则配置
-   */
-  transformImports?: {
-    [key: string]: {
-      transform: ((importName: string, matches: RegExpMatchArray) => string) | string;
-      preventFullImport?: boolean;
-    };
-  };
-  /**
-   * 是否开启自动识别 cssModules
-   */
-  autoCSSModules?: boolean;
-  /**
-   * 是否生成 sourceMap
-   */
-  sourceMap?: boolean;
-  /**
-   * 现有 sourceMap
-   */
-  map?: RawSourceMap;
-};
+export function transform(
+  source: string,
+  imports: ImportSpecifier[],
+  config: {
+    autoCSSModules: TransformerParams['autoCSSModules'];
+    transformImports: TransformerParams['transformImports'];
+  },
+) {
+  const { autoCSSModules, transformImports } = config;
 
-type UpdatedLine = {
-  sourceStartLine: number;
-  sourceEndLine: number;
-  addCount: number;
-};
-
-export default async function transformer(params: Params) {
-  const { autoCSSModules, transformImports, sourceMap } = params;
-  let { source, map } = params;
-
-  await init;
-
-  const [imports] = parse(source);
   const ms = new MagicString(source);
   const updatedLines: UpdatedLine[] = [];
 
@@ -81,7 +50,7 @@ export default async function transformer(params: Params) {
 
         if (!matches) return;
 
-        const { transform, preventFullImport } = transformImports[key];
+        const { transform: transformFn, preventFullImport } = transformImports[key];
         const statement = source.substring(item.ss, item.se);
 
         // remove "import" and "from xxx", e.g.
@@ -133,28 +102,26 @@ export default async function transformer(params: Params) {
             alias = pair[1];
           }
           const newFrom =
-            typeof transform === 'string'
-              ? transform.replace(new RegExp('\\$\\{member\\}', 'g'), origin)
-              : transform(origin, matches);
+            typeof transformFn === 'string'
+              ? transformFn.replace(new RegExp('\\$\\{member\\}', 'g'), origin)
+              : transformFn(origin, matches);
           results.push(`import ${alias} from "${newFrom}";`);
         });
         const resultsString = results.join('\n');
         // end position of updated content
         const updatedEnd = source.charAt(item.se) === ';' ? item.se + 1 : item.se;
 
-        if (sourceMap) {
-          // start line number of updated content
-          const sourceStartLine = source.slice(0, item.ss).split('\n').length;
-          // end line number of updated content
-          const sourceEndLine =
-            sourceStartLine + source.slice(item.ss, updatedEnd).split('\n').length - 1;
+        // start line number of updated content
+        const sourceStartLine = source.slice(0, item.ss).split('\n').length;
+        // end line number of updated content
+        const sourceEndLine =
+          sourceStartLine + source.slice(item.ss, updatedEnd).split('\n').length - 1;
 
-          updatedLines.push({
-            sourceStartLine,
-            sourceEndLine,
-            addCount: results.length - (sourceEndLine - sourceStartLine + 1),
-          });
-        }
+        updatedLines.push({
+          sourceStartLine,
+          sourceEndLine,
+          addCount: results.length - (sourceEndLine - sourceStartLine + 1),
+        });
 
         ms.update(item.ss, updatedEnd, resultsString);
         contentUpdated = true;
@@ -164,73 +131,34 @@ export default async function transformer(params: Params) {
 
   if (contentUpdated) {
     source = ms.toString();
-    // regenerate sourcemap when source content has been updated
-    if (sourceMap && map && updatedLines.length > 0) {
-      map = await reGenerateSourceMap(map, updatedLines);
-    }
+  }
+
+  return {
+    source,
+    updatedLines,
+  };
+}
+
+export default function transformer(params: TransformerParams) {
+  const { autoCSSModules, transformImports } = params;
+  let { source, map } = params;
+
+  const { imports } = parse({
+    input: [{ filename: '', code: source }],
+  }).output[0];
+
+  const transformResult = transform(source, imports, {
+    autoCSSModules,
+    transformImports,
+  });
+
+  if (transformResult.source !== source) {
+    source = transformResult.source;
+    // todo：source-map is not support sync task, do not regenerate sourceMap
   }
 
   return {
     source,
     map,
   };
-}
-
-/**
- * regenerate sourcemap by updated lines
- */
-async function reGenerateSourceMap(originMap: RawSourceMap, updatedLines: UpdatedLine[]) {
-  const newMap = await SourceMapConsumer.with(originMap, undefined, (consumer) => {
-    const generator = new SourceMapGenerator();
-    generator.setSourceContent(
-      originMap.sources[0],
-      originMap.sourcesContent ? originMap.sourcesContent[0] : '',
-    );
-    consumer.eachMapping(
-      ({ source, name, generatedLine, generatedColumn, originalLine, originalColumn }) => {
-        const newMapping = {
-          source,
-          name,
-          generated: { line: generatedLine, column: generatedColumn },
-          original: { line: originalLine, column: originalColumn },
-        };
-        let replaced = false;
-        let addCount = 0;
-        // update generated line number
-        updatedLines.forEach((item) => {
-          if (
-            newMapping.generated.line >= item.sourceStartLine &&
-            newMapping.generated.line <= item.sourceEndLine
-          ) {
-            replaced = true;
-          } else if (newMapping.generated.line > item.sourceEndLine) {
-            addCount += item.addCount;
-          }
-        });
-        // do not generate sourcemap of updated content
-        if (!replaced) {
-          newMapping.generated.line += addCount;
-          generator.addMapping(newMapping);
-        }
-      },
-    );
-    return generator.toJSON();
-  });
-
-  // for debugger
-  if (process.env.NODE_ENV !== 'production') {
-    const newMappings: any[] = [];
-    await SourceMapConsumer.with(newMap, undefined, (consumer) => {
-      consumer.eachMapping(({ generatedLine, generatedColumn, originalLine, originalColumn }) =>
-        newMappings.push({
-          generatedLine,
-          generatedColumn,
-          originalLine,
-          originalColumn,
-        }),
-      );
-    });
-  }
-
-  return newMap;
 }
