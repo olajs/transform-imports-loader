@@ -6,7 +6,7 @@ So, you can use it with `esbuild` or `babel`.
 
 ## install
 
-`npm i @jd/transform-imports-loader`
+`npm i @olajs/transform-imports-loader`
 
 ## usage
 
@@ -21,7 +21,7 @@ module.exports = {
         test: /\.(jsx?|tsx?)$/,
         use: [
           {
-            loader: '@jd/transform-imports-loader',
+            loader: '@olajs/transform-imports-loader',
             options: {
               autoCSSModules: false,
               transformImports: {
